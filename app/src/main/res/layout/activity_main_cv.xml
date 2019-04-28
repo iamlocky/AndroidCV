@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".demo.activity.MainCVActivity">
+
+    <include layout="@layout/titlebar_view" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateLayoutChanges="true">
+
+        <!--<org.opencv.android.JavaCameraView-->
+        <!--android:id="@+id/javaCameraView"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--opencv:camera_id="front"-->
+        <!--opencv:show_fps="true" />-->
+
+        <cn.lockyluo.androidcv.view.CameraCV
+            android:id="@+id/cameraCv"
+            app:camera_id_cv="front"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+        </cn.lockyluo.androidcv.view.CameraCV>
+
+        <android.support.constraint.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:alpha="0.8"
+            tools:background="@color/gray">
+
+            <SeekBar
+                android:id="@+id/seekBarScale"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/shape_corner_bg_white"
+                android:max="100"
+                android:progress="10"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <SeekBar
+                android:id="@+id/seekBarMinNeighbors"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/shape_corner_bg_white"
+                android:max="10"
+                android:progress="4"
+                app:layout_constraintTop_toBottomOf="@id/seekBarScale" />
+
+            <TextView
+                android:id="@+id/tvScale"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/seekBarMinNeighbors" />
+
+            <TextView
+                android:id="@+id/tvMinNeighbors"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                app:layout_constraintLeft_toRightOf="@id/tvScale"
+                app:layout_constraintTop_toBottomOf="@id/seekBarMinNeighbors" />
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cbEnableFace"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="人脸检测"
+                android:textColor="@color/white"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvScale" />
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cbEnableEye"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="眼睛检测"
+                android:textColor="@color/white"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cbEnableFace" />
+
+            <android.support.v7.widget.AppCompatCheckBox
+                android:id="@+id/cbEnableEqualize"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="直方图均衡化"
+                android:textColor="@color/white"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cbEnableEye" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cbEnableEqualize">
+
+                <Spinner
+                    android:id="@+id/spClassifierType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@color/white"
+                    android:entries="@array/faceClassifierType"
+                    android:spinnerMode="dialog" />
+
+                <Spinner
+                    android:id="@+id/spCameraSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:background="@color/white"
+                    android:minHeight="20dp"
+                    android:spinnerMode="dialog" />
+            </LinearLayout>
+
+        </android.support.constraint.ConstraintLayout>
+
+
+        <android.support.v7.widget.AppCompatImageView
+            android:id="@+id/btnSwitchFlash"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="10dp"
+            android:alpha="0.6"
+            android:scaleType="centerInside"
+            app:srcCompat="@drawable/ic_flash_price_hotel" />
+
+
+        <FrameLayout
+            android:id="@+id/flResultView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white"
+            tools:visibility="visible"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/ivRgba"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <android.support.v7.widget.AppCompatImageView
+                android:id="@+id/ivBtnClose"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:padding="5dp"
+                android:tint="@color/colorAccent"
+                app:srcCompat="@drawable/ic_close" />
+
+            <android.support.v7.widget.AppCompatImageView
+                android:id="@+id/ivBtnPre"
+                android:layout_width="30dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_vertical"
+                android:tint="@color/colorAccent"
+                app:srcCompat="@drawable/ic_back" />
+
+            <android.support.v7.widget.AppCompatImageView
+                android:id="@+id/ivBtnNext"
+                android:layout_width="30dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center_vertical|end"
+                android:rotation="180"
+                android:tint="@color/colorAccent"
+                app:srcCompat="@drawable/ic_back" />
+
+            <TextView
+                android:id="@+id/tvMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:textColor="@color/orange"
+                tools:text="666" />
+        </FrameLayout>
+
+
+        <ImageView
+            android:id="@+id/ivGray"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_gravity="bottom"
+            android:scaleType="fitCenter"
+            android:src="@color/white" />
+
+        <android.support.v7.widget.AppCompatImageView
+            android:id="@+id/btnSelectImage"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="10dp"
+            android:alpha="0.6"
+            android:padding="5dp"
+            android:scaleType="centerInside"
+            app:srcCompat="@drawable/ic_file" />
+
+
+    </FrameLayout>
+
+
+</LinearLayout>

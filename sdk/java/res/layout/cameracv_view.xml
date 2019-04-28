@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.opencv.android.JavaCameraView
+        android:id="@+id/cvJavaCameraView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        opencv:camera_id="front"
+        opencv:show_fps="true" />
+
+    <android.support.v7.widget.AppCompatImageView
+        android:id="@+id/iv_focused"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="center"
+        android:alpha="0.7"
+        android:tint="@color/green_light"
+        android:visibility="gone"
+        opencv:srcCompat="@drawable/ic_focus" />
+
+    <TextView
+        android:id="@+id/cvTvFps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:textColor="@color/orange"
+        android:textSize="12sp"
+        tools:text="666" />
+</FrameLayout>
