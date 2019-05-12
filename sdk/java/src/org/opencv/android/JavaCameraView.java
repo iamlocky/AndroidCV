@@ -149,8 +149,9 @@ public class JavaCameraView extends CameraBridgeViewBase implements PreviewCallb
                     sizes.add(new Size(temp.width, temp.height));
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {//过滤掉多余的分辨率--TODO: 暂时使用stream，后续用kotlin重写
-                    sizes = sizes.stream().filter(size ->
-                            isPortrait ? size.getHeight() < size.getWidth() : size.getHeight() > size.getWidth()).collect(Collectors.toList());
+                    sizes = sizes.stream().filter(size ->size.getHeight() < size.getWidth()
+//                            isPortrait ? size.getHeight() < size.getWidth() : size.getHeight() > size.getWidth()
+                    ).collect(Collectors.toList());
                 }
                 Collections.sort(sizes, (o1, o2) -> o1.getHeight() - o2.getWidth());
 

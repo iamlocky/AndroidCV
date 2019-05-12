@@ -1,11 +1,8 @@
 package cn.lockyluo.androidcv.helper
 
 import android.content.Context
-import android.support.annotation.RawRes
 import cn.lockyluo.androidcv.utils.DetectionResult
-import cn.lockyluo.androidcv.utils.FileUtils
 import cn.lockyluo.androidcv.utils.logD
-import org.opencv.R
 import org.opencv.android.CameraBridgeViewBase
 import org.opencv.core.*
 import org.opencv.dnn.Dnn
@@ -36,7 +33,6 @@ class FaceDetectionHelper(
         const val TYPE_LBP = 1
     }
 
-
     private val faceRectColor = Scalar(0.0, 255.0, 0.0, 255.0)//BGR 绿色
     private val eyeRectColor = Scalar(0.0, 255.0, 255.0, 255.0)//BGR 浅蓝色
     private var faceCascadeClassifier: CascadeClassifier? = null
@@ -64,7 +60,6 @@ class FaceDetectionHelper(
         }
     }
 
-
     /**
      * 人脸检测方法
      * 设横屏角度为标准0，顺时针角度加，则竖屏为90，反向横屏为180，反向竖屏为270
@@ -78,12 +73,11 @@ class FaceDetectionHelper(
         detectRotation: Int = 0,
         enableDetectEye: Boolean = false,
         scaleFactor: Double = 1.1,
-        minNeighbors: Int = 3,
+        minNeighbors: Int = 2,
         flags: Int = Objdetect.CASCADE_DO_CANNY_PRUNING,
         minSize: Size = Size(),
         maxSize: Size = Size(),
-        isEqualizeHist: Boolean = true,
-        cameraBridgeType: Int = CameraBridgeViewBase.CAMERA_ID_BACK
+        isEqualizeHist: Boolean = true
     ): DetectionResult {
         var result = DetectionResult()
         inputFrame?.let {
@@ -99,8 +93,7 @@ class FaceDetectionHelper(
                     minSize,
                     maxSize,
                     isEqualizeHist,
-                    true,
-                    cameraBridgeType
+                    true
                 )
         }
         return result
@@ -119,13 +112,12 @@ class FaceDetectionHelper(
         detectRotation: Int = 0,
         enableDetectEye: Boolean = true,
         scaleFactor: Double = 1.1,
-        minNeighbors: Int = 3,
+        minNeighbors: Int = 2,
         flags: Int = Objdetect.CASCADE_DO_CANNY_PRUNING,
         minSize: Size = Size(),
         maxSize: Size = Size(),
         isEqualizeHist: Boolean = true,
-        isCamera: Boolean = false,
-        cameraBridgeType: Int = CameraBridgeViewBase.CAMERA_ID_BACK
+        isCamera: Boolean = false
     ): DetectionResult {
         if (minSize.empty() && isCamera) {
             //使用摄像头时，根据图像大小计算脸的min阈值
@@ -145,13 +137,6 @@ class FaceDetectionHelper(
 
         countTime("equalizeHist")
 
-//        //使前置的图像也是正的
-//        if (cameraBridgeType == CameraBridgeViewBase.CAMERA_ID_FRONT) {
-//            Core.flip(rgba, rgba, 1)
-//            Core.flip(gray, gray, 1)
-//            countTime("flip CAMERA_ID_FRONT")
-//        }
-
         val faces = MatOfRect()
 
         val rotateCode = when (detectRotation) {//旋转灰度图
@@ -170,6 +155,11 @@ class FaceDetectionHelper(
 
         countTime("detect face")
 
+        if (rotateCode != -1) {
+            Core.rotate(gray, gray, 2 - rotateCode)
+            countTime("rotate gray")
+        }
+
         //框出检测结果
         val facesArray = faces.toArray()
         if (facesArray.isNotEmpty()) {
@@ -180,22 +170,31 @@ class FaceDetectionHelper(
                 facesArray[i].let { face ->
                     val faceSquareSize = Math.max(face.width, face.height)//初略确定脸的大小
                     val faceStartPoint =
-                        if (isCamera) Point(face.tl().y, rgba.height() - face.br().x) else face.tl()//换算旋转后的起始点坐标
-                    val faceEndPoint = if (isCamera) Point(
-                        faceStartPoint.x + face.height,
-                        faceStartPoint.y + face.width
-                    ) else face.br()//换算旋转后的结束点坐标
+                        if (isCamera && detectRotation == 90) {
+                            Point(
+                                face.tl().y,
+                                rgba.height() - face.br().x
+                            )
+                        } else face.tl()//换算旋转后的起始点坐标
+                    val faceEndPoint = if (isCamera) {
+                        Point(
+                            faceStartPoint.x + face.height,
+                            faceStartPoint.y + face.width
+                        )
+                    } else face.br()//换算旋转后的结束点坐标
 
                     if (isShowMark) {
                         Imgproc.rectangle(rgba, faceStartPoint, faceEndPoint, faceRectColor, 2)
                         countTime("rectangle face($i)")
                     }
 
+
+
                     if (enableDetectEye) {//检测到脸才开始检测眼睛
                         detectEyes(
                             rgba,
                             gray,
-                            0,
+                            detectRotation,
 //                            flags = flags,
                             minSize = Size(faceSquareSize / 8.0, faceSquareSize / 8.0),//设置最小检测阈值
                             maxSize = Size(faceSquareSize.toDouble() / 2, faceSquareSize.toDouble() / 2),//设置最大检测阈值
@@ -220,25 +219,13 @@ class FaceDetectionHelper(
         gray: Mat,
         detectRotation: Int = 0,
         scaleFactor: Double = 1.1,
-        minNeighbors: Int = 8,
+        minNeighbors: Int = 6,
         flags: Int = Objdetect.CASCADE_DO_CANNY_PRUNING,
         minSize: Size = Size(1.0, 1.0),
         maxSize: Size = Size(),
         isCamera: Boolean
     ): DetectionResult {
         val eyes = MatOfRect()
-
-        eyeCascadeClassifier?.detectMultiScale(
-            gray,
-            eyes,
-            scaleFactor,
-            minNeighbors,
-            flags,
-            minSize,
-            maxSize
-        )
-
-        countTime("detect eyes")
 
         val rotateCode = when (detectRotation) {
             90 -> Core.ROTATE_90_CLOCKWISE
@@ -250,6 +237,23 @@ class FaceDetectionHelper(
             Core.rotate(gray, gray, rotateCode)
         }
 
+        eyeCascadeClassifier?.detectMultiScale(//眼睛检测
+            gray,
+            eyes,
+            scaleFactor,
+            minNeighbors,
+            flags,
+            minSize,
+            maxSize
+        )
+
+        countTime("detect eyes")
+
+        if (rotateCode != -1) {
+            Core.rotate(gray, gray, 2 - rotateCode)
+            countTime("rotate gray")
+        }
+
         val eyesArray = eyes.toArray()
         eyesArray.sortWith(Comparator { o1, o2 -> o1.y - o2.y })//按y坐标排序
         //标记眼睛框
@@ -259,15 +263,19 @@ class FaceDetectionHelper(
 //                    continue
 //                }
                 val eyeStartPoint =
-                    if (isCamera) Point(
-                        eyesArray[i].tl().y,
-                        rgba.height() - eyesArray[i].br().x
-                    ) else eyesArray[i].tl()//如果是摄像头，换算旋转后的坐标
+                    if (isCamera && detectRotation == 90) {
+                        Point(
+                            eyesArray[i].tl().y,
+                            rgba.height() - eyesArray[i].br().x
+                        )
+                    } else eyesArray[i].tl()//如果是摄像头，换算旋转后的坐标
                 val eyeEndPoint =
-                    if (isCamera) Point(
-                        eyeStartPoint.x + eyesArray[i].height,
-                        eyeStartPoint.y + eyesArray[i].width
-                    ) else eyesArray[i].br()
+                    if (isCamera && detectRotation == 90) {
+                        Point(
+                            eyeStartPoint.x + eyesArray[i].height,
+                            eyeStartPoint.y + eyesArray[i].width
+                        )
+                    } else eyesArray[i].br()
 
                 Imgproc.rectangle(rgba, eyeStartPoint, eyeEndPoint, eyeRectColor, 1)
             }
@@ -278,12 +286,11 @@ class FaceDetectionHelper(
     }
 
 
-
     /**
-     * 深度神经网络检测样例
+     * 深度神经网络检测代码样例
      */
     @JvmOverloads
-    open fun detectFaceDnn(net: Net, rgb: Mat, detectRotation: Int = 0,threshold:Double=0.8): DetectionResult {
+    open fun detectFaceDnn(net: Net, rgb: Mat, detectRotation: Int = 0, threshold: Double = 0.8): DetectionResult {
         countTime()
         val IN_WIDTH = 300//模型大小
         val IN_HEIGHT = 300
@@ -335,7 +342,7 @@ class FaceDetectionHelper(
         rows = subFrame.rows()
 
         detections = detections.reshape(1, detections.total().toInt() / 7)
-        val rects=mutableListOf<Rect>()
+        val rects = mutableListOf<Rect>()
         for (i in 0 until detections.rows()) {
             val confidence = detections.get(i, 2)[0]
             if (confidence > THRESHOLD) {
@@ -345,7 +352,7 @@ class FaceDetectionHelper(
                 val right = (detections.get(i, 5)[0] * cols)
                 val bottom = (detections.get(i, 6)[0] * rows)
                 // Draw rectangle around detected object.
-                rects.add(Rect(left.toInt(),top.toInt(),(right-left).toInt(),(bottom-top).toInt()))//添加结果
+                rects.add(Rect(left.toInt(), top.toInt(), (right - left).toInt(), (bottom - top).toInt()))//添加结果
 
                 Imgproc.rectangle(
                     subFrame, Point(left, top),
@@ -377,6 +384,9 @@ class FaceDetectionHelper(
             countTime("rotate back rgb")
         }
 
-        return DetectionResult(rgba = rgb,results = rects.toTypedArray(),message = stringBuilderTime.toString().also { context.logD(it) })
+        return DetectionResult(
+            rgba = rgb,
+            results = rects.toTypedArray(),
+            message = stringBuilderTime.toString().also { context.logD(it) })
     }
 }

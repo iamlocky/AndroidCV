@@ -54,7 +54,7 @@ class MainCVActivity : BaseActivity() {
         openCVHelper = OpenCVHelper(context) {
             if (it) {
                 if (faceDetectionHelper == null) {
-                    faceDetectionHelper = openCVHelper.getFaceDetectionHelper()
+                    faceDetectionHelper = openCVHelper.getFaceDetectionHelper(FaceDetectionHelper.TYPE_LBP)
 
                 }
                 flResultView.visibility = if (enablePreview) {//如果选择了图片检测，则暂停摄像头
@@ -94,14 +94,19 @@ class MainCVActivity : BaseActivity() {
                 }
 
                 else -> {
+                    val rotation=when(cameraCv.getScreenRotation()){
+                        90->0
+                        180->90
+                        270->180
+                        else->90
+                    }
                     val result = faceDetectionHelper?.detectFace(
-                        rgba, gray, 90, cbEnableEye.isChecked,
+                        rgba, gray, rotation, cbEnableEye.isChecked,
                         1 + (seekBarScale.progress.toDouble() / 100),
                         seekBarMinNeighbors.progress, Objdetect.CASCADE_DO_CANNY_PRUNING,
                         Size(), Size(),
                         cbEnableEqualize.isChecked,
-                        true,
-                        cameraType
+                        true
                     )
                     result?.rgba
                 }
@@ -319,7 +324,11 @@ class MainCVActivity : BaseActivity() {
         Thread {
             for (i in 0 until mats.size) {
                 runOnUiThread { progressDialog?.setMessage("正在检测第${i + 1}张") }
-
+                //--
+//                val bitmap = Bitmap.createBitmap(mats[i].width(), mats[i].height(), Bitmap.Config.RGB_565)
+//                Utils.matToBitmap(mats[i], bitmap)
+//                faceDetectionHelper?.androidFaceDetector(bitmap)
+                //--
                 if (spClassifierType.selectedItemPosition == 2) {
                     net?.let {
                         faceDetectionHelper?.detectFaceDnn(net!!, mats[i])?.also {
@@ -330,7 +339,7 @@ class MainCVActivity : BaseActivity() {
                     faceDetectionHelper?.detectFace(
                         mats[i], openCVHelper.matRgb2Gray(mats[i]),
                         0, cbEnableEye.isChecked, 1 + (seekBarScale.progress.toDouble() / 100),
-                        seekBarMinNeighbors.progress
+                        seekBarMinNeighbors.progress,isEqualizeHist = cbEnableEqualize.isChecked
                     )?.also {
                         results.add(it)//添加检测结果到ArrayList
                     }

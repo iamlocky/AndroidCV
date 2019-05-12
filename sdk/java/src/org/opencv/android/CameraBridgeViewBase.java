@@ -1,7 +1,7 @@
 package org.opencv.android;
 
 import android.content.Context;
-import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -9,8 +9,10 @@ import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.Size;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.WindowManager;
 import cn.lockyluo.androidcv.utils.ToastUtil;
 import com.orhanobut.logger.Logger;
 import org.opencv.BuildConfig;
@@ -59,8 +61,10 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     public String fpsString = "";
     public List<Size> sizes = new ArrayList<>();
     public Size currentCameraSize = new Size(300, 300);//当前分辨率
-    public boolean isPortrait = true;
+    public boolean isPortrait = true;//是否竖屏
     public boolean isShowFps = false;
+    public int orientation = 0;//Configuration判断
+    public int screenRotation = 0;
 
     public CameraBridgeViewBase(Context context, int cameraId) {
         super(context);
@@ -378,6 +382,9 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private void onEnterStartedState() {
         Log.d(TAG, "call onEnterStartedState");
         /* Connect camera */
+        orientation = getResources().getConfiguration().orientation;
+        screenRotation = getScreenRotation();//获取屏幕方向
+        isPortrait = !(orientation == 2);
         if (!connectCamera(currentCameraSize.getWidth(), currentCameraSize.getHeight())) {
             ToastUtil.INSTANCE.snackBarMake(this, "相机连接异常", "重试", v -> {//修改为底部弹窗
                 disableView();
@@ -395,7 +402,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
      */
     public Size getCameraSize(int index) {
         if (index < 0 || index >= sizes.size() || sizes.isEmpty()) {
-            return new Size(getWidth(), getHeight());
+            return new Size(300, 300);
         } else {
             return sizes.get(index);
         }
@@ -463,16 +470,36 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         }
     }
 
+
+    public int getScreenRotation() {
+        WindowManager windowManager = (WindowManager) getContext().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+        int screenRotationCode = 0;
+        if (windowManager != null) {
+            screenRotationCode = windowManager.getDefaultDisplay().getRotation();
+            switch (screenRotationCode) {
+                case Surface.ROTATION_0:
+                    return 0;
+                case Surface.ROTATION_90:
+                    return 90;
+                case Surface.ROTATION_180:
+                    return 180;
+                case Surface.ROTATION_270:
+                    return 270;
+            }
+        }
+        return 0;
+    }
+
     /**
      * 判断当前屏幕是竖屏还是横屏，采取不同绘制方案
      *
      * @param canvas
      */
     private void validateScreenOrientation(Canvas canvas) {
-        switch (getResources().getConfiguration().orientation) {
-            case ActivityInfo.SCREEN_ORIENTATION_PORTRAIT:
-            case ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT:
-            case ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT: {//---竖屏
+        orientation = getResources().getConfiguration().orientation;
+        switch (orientation) {
+            case Configuration.ORIENTATION_UNDEFINED:
+            case Configuration.ORIENTATION_PORTRAIT: {//---竖屏
                 isPortrait = true;
                 canvas.rotate(90, 0, 0);
                 float scale = canvas.getWidth() / (float) mCacheBitmap.getHeight();
@@ -495,11 +522,19 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
                 }
 
                 if (mScale != 0) {
-                    canvas.drawBitmap(mCacheBitmap, new Rect(0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-                            new Rect((int) ((canvas.getWidth() - mScale * mCacheBitmap.getWidth()) / 2),
-                                    (int) ((canvas.getHeight() - mScale * mCacheBitmap.getHeight()) / 2),
-                                    (int) ((canvas.getWidth() - mScale * mCacheBitmap.getWidth()) / 2 + mScale * mCacheBitmap.getWidth()),
-                                    (int) ((canvas.getHeight() - mScale * mCacheBitmap.getHeight()) / 2 + mScale * mCacheBitmap.getHeight())), null);
+                    float scale = canvas.getHeight() / (float) mCacheBitmap.getHeight();
+                    float scale2 = canvas.getWidth() / (float) mCacheBitmap.getWidth();
+                    scale = Math.max(scale, scale2);
+                    if (scale != 0) {
+                        canvas.scale(scale, scale, 0, 0);
+                    }
+                    canvas.drawBitmap(mCacheBitmap, 0, 0, null);
+//                    canvas.drawBitmap(mCacheBitmap, new Rect(0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
+//                            new Rect((int) ((canvas.getWidth() - mScale * mCacheBitmap.getWidth()) / 2),
+//                                    (int) ((canvas.getHeight() - mScale * mCacheBitmap.getHeight()) / 2),
+//                                    (int) ((canvas.getWidth() - mScale * mCacheBitmap.getWidth()) / 2 + mScale * mCacheBitmap.getWidth()),
+//                                    (int) ((canvas.getHeight() - mScale * mCacheBitmap.getHeight()) / 2 + mScale * mCacheBitmap.getHeight())), null);
+//
                 } else {
                     canvas.drawBitmap(mCacheBitmap, new Rect(0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
                             new Rect((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,

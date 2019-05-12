@@ -1,9 +1,13 @@
 package cn.lockyluo.androidcv.helper
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.media.FaceDetector
 import android.support.annotation.RawRes
 import cn.lockyluo.androidcv.utils.DetectionResult
 import cn.lockyluo.androidcv.utils.FileUtils
+import cn.lockyluo.androidcv.utils.GsonUtils
+import cn.lockyluo.androidcv.utils.logD
 import org.opencv.core.*
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
@@ -132,4 +136,20 @@ open class BaseDetectionHelper(val context: Context, private val openCVHelper: O
             FileUtils.copyFilesFromRaw(context,caffemodelId, dnnDir.path, "deploymodel.caffemodel").path
         return Dnn.readNetFromCaffe(configurationFile, modelFile)
     }
+
+    /**
+     * android提供的api，用于对比测试
+     */
+    fun androidFaceDetector(bitmap: Bitmap,maxFaces:Int=10):List<FaceDetector.Face>{
+        countTime()
+        val faceDetector=FaceDetector(bitmap.width,bitmap.height,maxFaces)
+        var faceList = arrayOfNulls<FaceDetector.Face>(10)
+        val nums=faceDetector.findFaces(bitmap,faceList)
+        countTime("found $nums")
+        val results= mutableListOf<FaceDetector.Face>()
+        faceList.forEach { if (it!=null) results.add(it) }
+        context.logD("$stringBuilderTime\n"+GsonUtils.gson.toJson(results))
+        return results
+    }
+
 }

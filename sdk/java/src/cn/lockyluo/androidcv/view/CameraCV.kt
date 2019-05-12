@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import cn.lockyluo.androidcv.utils.logD
 import cn.lockyluo.androidcv.utils.logE
 import cn.lockyluo.androidcv.utils.switchFlashLight
 import kotlinx.android.synthetic.main.cameracv_view.view.*
@@ -59,6 +60,18 @@ class CameraCV : FrameLayout {
         }
 
         initListener()
+    }
+
+    /**
+     * 0为竖屏，顺时针加90
+     */
+    fun getScreenRotation():Int{
+        context.logD(javaCameraView.screenRotation)
+        return javaCameraView.screenRotation
+    }
+
+    fun isPortrait():Boolean{
+        return javaCameraView.isPortrait
     }
 
     fun switchFlashLight(cameraFlashMode: Boolean): Boolean {
