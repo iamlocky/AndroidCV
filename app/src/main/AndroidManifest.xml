@@ -18,7 +18,7 @@
         android:theme="@style/AppTheme">
         <activity
             android:name="cn.lockyluo.androidcv.demo.activity.MainCVActivity"
-            android:screenOrientation="sensor">
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
